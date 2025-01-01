@@ -1,63 +1,40 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>ż.co</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
     <script>
-      var LINKS_BASE_PATH = "https://xn--hha.co/z";
-      var PATH_SEGMENTS_TO_SKIP = 0;
-      function isUrl(url) {
-        return /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,24}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)+$/.test(
-          url
-        );
-      }
+        // Function to fetch the links from the text file
+        async function fetchLinks() {
+            const response = await fetch('links.txt');
+            const text = await response.text();
+            const links = text.split('\n').reduce((acc, line) => {
+                const [short, long] = line.split(' - ');
+                if (short && long) {
+                    acc[short.trim()] = long.trim();
+                }
+                return acc;
+            }, {});
+            return links;
+        }
 
-      function redirect() {
-        var location = window.location;
-        var shorLink = location.pathname.split("/")[
-          PATH_SEGMENTS_TO_SKIP + 1
-        ];
-        var homepage =
-          location.protocol +
-          "//" +
-          location.hostname +
-          (location.port ? ":" + location.port : "") +
-          "/" +
-          location.pathname.split("/")[PATH_SEGMENTS_TO_SKIP];
-
-        var xhr = new XMLHttpRequest();
-
-        xhr.onload = function () {
-          try {
-            var link = xhr.response.replace(/\n$/, "");
-
-            var url = document.createElement("a");
-            url.setAttribute("href", link);
-
-            var isInvalidUrl =
-              !link ||
-              !isUrl(link) ||
-              url.hostname === location.hostname;
-
-            if (isInvalidUrl) {
-              location.replace(homepage);
+        // Function to redirect based on the short URL
+        async function redirect() {
+            const path = window.location.pathname.slice(1); // Get the path without leading slash
+            const links = await fetchLinks();
+            const longUrl = links[path];
+            if (longUrl) {
+                window.location.href = longUrl; // Redirect to the long URL
             } else {
-              location.replace(link);
+                document.body.innerHTML = '<h1>404 Not Found</h1>'; // Show 404 if not found
             }
-          } catch (e) {
-            location.replace(homepage);
-          }
-        };
+        }
 
-        xhr.onerror = function () {
-          location.replace(homepage);
-        };
-        xhr.open("GET", LINKS_BASE_PATH + shorLink);
-        xhr.send();
-      }
-
-      redirect();
+        // Call redirect function on page load
+        window.onload = redirect;
     </script>
-  </head>
-  <body></body>
+</head>
+<body>
+</body>
 </html>
